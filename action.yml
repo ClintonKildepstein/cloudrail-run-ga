@@ -17,13 +17,20 @@ inputs:
   cloud-account-id:
     description: 'The identifier of the cloud account you have run the Terraform plan against. Set to empty string if you would like to run without using a cloud account.'
     required: true
+  drift-track:
+    description: 'If true, the --drift-track flag will be included in the run, which will cause Cloudrail to automatically look for drifts from the IaC configuration.'
+    required: false
+    default: ''
 runs:
   using: "composite"
   steps:
     - run: docker pull indeni/cloudrail-cli
       shell: bash
 
-    # The following two steps are from: https://stackoverflow.com/a/64210623/3830413
+    # Determine the branch-name
+    - run: ./scripts/determine_branch_name.sh
+      shell: bash
+
     - run: |
         # Determine whether a cloud account is being used
         INPUT_CLOUD_ACCOUNT_ID='${{ inputs.cloud-account-id}}'
@@ -35,19 +42,21 @@ runs:
           CLOUD_ARGUMENT="--cloud-account-id $INPUT_CLOUD_ACCOUNT_ID_NO_WHITESPACE"
         fi
 
-        # Determine branch name
-        if [ -z "${GITHUB_HEAD_REF}" ]; then
-          BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)
+        # Determine whether --drift-track should be used
+        if [ "${{ inputs.drift-track}}" = "true" ]; then
+          echo "Drift tracking is being used..."
+          DRIFT_TRACK_ARGUMENT="--drift-track"
         else
-          BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)
+          echo "Drift tracking is NOT being used..."
+          DRIFT_TRACK_ARGUMENT=""
         fi
-        echo Determined branch name to be ${BRANCH_NAME}
 
         # Note, we need "--user root" because otherwise we run into permission issues: https://stackoverflow.com/questions/58921029/github-actions-cannot-write-to-file-permission-denied-inside-the-docker-contai
         docker run --rm --user root -v $PWD:/data:rw indeni/cloudrail-cli run \
           --tf-plan ${{ inputs.tf-plan-file}} \
           --api-key ${{ inputs.cloudrail-api-key }} \
           ${CLOUD_ARGUMENT} \
+          ${DRIFT_TRACK_ARGUMENT} \
           --origin ci --build-link "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"  --execution-source-identifier "${BRANCH_NAME} - $GITHUB_RUN_NUMBER" \
           --output-file "cloudrail_results.sarif" --output-format sarif --base-dir ${{ inputs.working-directory }} \
           --auto-approve
