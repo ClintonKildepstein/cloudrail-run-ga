@@ -28,7 +28,7 @@ runs:
       shell: bash
 
     # Determine the branch-name
-    - run: ./scripts/determine_branch_name.sh
+    - run: scripts/determine_branch_name.sh
       shell: bash
 
     - run: |
