@@ -51,6 +51,12 @@ runs:
           DRIFT_TRACK_ARGUMENT=""
         fi
 
+        VCS_ID="${GITHUB_REPOSITORY}/${GITHUB_REF}"
+        IAC_URL_TEMPLATE="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${BRANCH_NAME}/{iac_file_path}#L{iac_file_line_no}"
+
+        echo "VCS ID used: $VCS_ID"
+        echo "IaC URL Template used: $IAC_URL_TEMPLATE"
+
         # Note, we need "--user root" because otherwise we run into permission issues: https://stackoverflow.com/questions/58921029/github-actions-cannot-write-to-file-permission-denied-inside-the-docker-contai
         docker run --rm --user root -v $PWD:/data:rw indeni/cloudrail-cli run \
           --tf-plan ${{ inputs.tf-plan-file}} \
@@ -59,6 +65,7 @@ runs:
           ${DRIFT_TRACK_ARGUMENT} \
           --origin ci --build-link "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"  --execution-source-identifier "${BRANCH_NAME} - $GITHUB_RUN_NUMBER" \
           --output-file "cloudrail_results.sarif" --output-format sarif --base-dir ${{ inputs.working-directory }} \
+          --vcs-id $VCS_ID --iac-url-template $IAC_URL_TEMPLATE \
           --auto-approve
       shell: bash
       working-directory: ${{ inputs.working-directory }}
