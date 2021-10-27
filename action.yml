@@ -52,7 +52,7 @@ runs:
         fi
 
         VCS_ID="${GITHUB_REPOSITORY}/${GITHUB_REF}"
-        IAC_URL_TEMPLATE="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${BRANCH_NAME}/${{ inputs.working-directory }}/{iac_file_path}#L{iac_file_line_no}"
+        IAC_URL_TEMPLATE="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${BRANCH_NAME}/{iac_file_path}#L{iac_file_line_no}"
 
         echo "VCS ID used: $VCS_ID"
         echo "IaC URL Template used: $IAC_URL_TEMPLATE"
